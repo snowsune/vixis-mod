@@ -1,2 +1,3 @@
-require("prototypes.entity")
-require("prototypes.item")
+require("prototypes.pawb-entity")
+require("prototypes.pawb-item")
+require("prototypes.pawb-recipe")
