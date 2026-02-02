@@ -1,0 +1,11 @@
+{
+    "name": "vixis-mod",
+    "version": "0.0.1",
+    "title": "Vixi's Mod",
+    "author": "Vixi",
+    "factorio_version": "2.0",
+    "description": "This is my personal little pack of factorio tweaks and items!",
+    "dependencies": [
+        "base >= 2.0.0"
+    ]
+}
