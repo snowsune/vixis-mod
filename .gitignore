@@ -1,1 +1,7 @@
 *.*~
+
+# Blender autosave backups
+*.blend1
+
+# Raw animation frames (packed spritesheets are what the mod uses)
+graphics/entity/load-shed-breaker/[0-9][0-9][0-9][0-9].png

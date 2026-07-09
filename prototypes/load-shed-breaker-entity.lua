@@ -1,5 +1,3 @@
-local purple_tint = { r = 0.55, g = 0.25, b = 0.85, a = 1.0 }
-
 data:extend({
   {
     type = "power-switch",
@@ -16,35 +14,15 @@ data:extend({
     tile_height = 2,
     collision_box = { { -1.4, -0.9 }, { 1.4, 0.9 } },
     selection_box = { { -1.5, -1.0 }, { 1.5, 1.0 } },
+    -- Invisible base; scripted rendering draws the Blender animation.
     power_on_animation = {
-      filename = "__vixis-mod__/graphics/load-shed-breaker.png",
-      width = 192,
-      height = 128,
+      filename = "__vixis-mod__/graphics/entity/load-shed-breaker/transparent.png",
+      width = 1,
+      height = 1,
       frame_count = 1,
       line_length = 1,
-      scale = 0.5,
-      tint = purple_tint,
     },
     overlay_start_delay = 0,
-    led_on = {
-      filename = "__base__/graphics/entity/power-switch/power-switch-led.png",
-      x = 48,
-      width = 48,
-      height = 60,
-      shift = { 1.0, 0.0 },
-      blend_mode = "additive",
-      scale = 0.5,
-      tint = { r = 0.4, g = 1.0, b = 0.4, a = 1.0 },
-    },
-    led_off = {
-      filename = "__base__/graphics/entity/power-switch/power-switch-led.png",
-      width = 48,
-      height = 60,
-      shift = { 1.0, 0.0 },
-      blend_mode = "additive",
-      scale = 0.5,
-      tint = { r = 1.0, g = 0.35, b = 0.35, a = 1.0 },
-    },
     open_sound = { filename = "__base__/sound/machine-open.ogg", volume = 0.5 },
     close_sound = { filename = "__base__/sound/machine-close.ogg", volume = 0.5 },
     working_sound = {

@@ -1,6 +1,7 @@
 require("prototypes.pawb-entity")
 require("prototypes.pawb-item")
 require("prototypes.pawb-recipe")
+require("prototypes.load-shed-breaker-animations")
 require("prototypes.load-shed-breaker-entity")
 require("prototypes.load-shed-breaker-item")
 require("prototypes.load-shed-breaker-recipe")
