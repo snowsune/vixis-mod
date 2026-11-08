@@ -2,7 +2,8 @@ local BREAKER = "vixis-load-shed-breaker"
 local TICK = 10
 local LOW_STREAK = 3
 local RESET_SIGNAL = { type = "virtual", name = "signal-R" }
-local OFFSET = { 0, -2 }
+-- Tiny nudge to draw between player and world
+local OFFSET = { 0, 0.01 }
 
 local VIS = {
   on = { "vixis-load-shed-on" },
@@ -53,7 +54,10 @@ local function kill_render(d)
   d.render = nil
 end
 
-local function draw(entity, d, anim, speed, offset)
+-- Because i dont really just have an idle animation (and factorio picks frame)
+-- to draw based on the global frametimer
+-- i wanna start at a specific zero
+local function draw(entity, d, anim, speed, frames)
   kill_render(d)
   d.render = rendering.draw_animation({
     animation = anim,
@@ -61,7 +65,7 @@ local function draw(entity, d, anim, speed, offset)
     surface = entity.surface,
     render_layer = "object",
     animation_speed = speed,
-    animation_offset = offset,
+    animation_offset = frames and (-game.tick * speed) % frames or 0,
   })
 end
 
@@ -73,9 +77,9 @@ local function set_phase(entity, d, phase)
   d.phase = phase
   if spec[2] then
     d.anim_start = game.tick
-    draw(entity, d, spec[1], spec[2], 0)
+    draw(entity, d, spec[1], spec[2], spec[3])
   else
-    draw(entity, d, spec[1], 0, 0)
+    draw(entity, d, spec[1], 0)
   end
 end
 
@@ -84,17 +88,57 @@ local function anim_frame(d, phase)
   return (game.tick - d.anim_start) * spec[2]
 end
 
+local ALERT_ICON = { type = "item", name = BREAKER }
+local ALERT_MSG = { "vixis-alert.fuse-blown" }
+local ALERT_REFRESH = 60
+
+-- THIS IS MESSY im just adding the warning every tick >.<
+local function set_alert(entity, on)
+  for _, player in pairs(entity.force.players) do
+    player.remove_alert { entity = entity, type = defines.alert_type.custom }
+    if on then
+      player.add_custom_alert(entity, ALERT_ICON, ALERT_MSG, true)
+    end
+  end
+end
+
+local function set_status(entity, tripped)
+  if tripped then
+    entity.custom_status = {
+      diode = defines.entity_status_diode.red,
+      label = { "entity-status.vixis-load-shed-tripped" },
+    }
+  else
+    entity.custom_status = nil
+  end
+end
+
+local function satisfaction(entity, require_closed)
+  if require_closed ~= false and not entity.power_switch_state then
+    return nil
+  end
+  if not entity.get_wire_connector then
+    return nil
+  end
+  for _, id in ipairs(COPPER) do
+    local w = entity.get_wire_connector(id, false)
+    if w and w.valid and w.real_connection_count > 0 then
+      local net = w.electric_network and w.electric_network.valid and w.electric_network.parent_network
+      if net and net.valid then
+        local f = net.flow_last_tick
+        if f and f.consumption_satisfaction and f.maximum_consumption > 0 then
+          return f.consumption_satisfaction
+        end
+      end
+    end
+  end
+  return nil
+end
+
+-- wait to recheck if satisified, we'll re-check in tick() if we should quick trip again
 local function finish_reset(entity, d)
   entity.power_switch_state = true
-  local sat = satisfaction(entity)
-  if sat and sat < threshold() then
-    entity.power_switch_state = false
-    d.latched = true
-    d.low_streak = 0
-    set_status(entity, true)
-    set_phase(entity, d, "tripped")
-    return
-  end
+  d.low_streak = 0
   d.latched = false
   entity.custom_status = nil
   set_phase(entity, d, "hold")
@@ -134,39 +178,6 @@ local function step_anim(entity, d)
   end
 end
 
-local function set_status(entity, tripped)
-  if tripped then
-    entity.custom_status = {
-      diode = defines.entity_status_diode.red,
-      label = { "entity-status.vixis-load-shed-tripped" },
-    }
-  else
-    entity.custom_status = nil
-  end
-end
-
-local function satisfaction(entity, require_closed)
-  if require_closed ~= false and not entity.power_switch_state then
-    return nil
-  end
-  if not entity.get_wire_connector then
-    return nil
-  end
-  for _, id in ipairs(COPPER) do
-    local w = entity.get_wire_connector(id, false)
-    if w and w.valid and w.real_connection_count > 0 then
-      local net = w.electric_network and w.electric_network.valid and w.electric_network.parent_network
-      if net and net.valid then
-        local f = net.flow_last_tick
-        if f and f.consumption_satisfaction and f.maximum_consumption > 0 then
-          return f.consumption_satisfaction
-        end
-      end
-    end
-  end
-  return nil
-end
-
 local function wants_reset(entity)
   for _, id in ipairs(CIRCUIT) do
     if entity.get_signal(RESET_SIGNAL, id) > 0 then
@@ -179,7 +190,14 @@ end
 local function tick(entity)
   local d = data_for(entity)
 
+  if d.latched and d.phase ~= "reset" and game.tick % ALERT_REFRESH == 0 then
+    set_alert(entity, true)
+  end
+
   if d.phase == "eject" or d.phase == "reset" then
+    if d.phase == "eject" then
+      entity.power_switch_state = false
+    end
     step_anim(entity, d)
     return
   end
@@ -194,6 +212,7 @@ local function tick(entity)
     set_status(entity, true)
     if wants_reset(entity) or entity.power_switch_state then
       entity.power_switch_state = false
+      set_alert(entity, false)
       set_phase(entity, d, "reset")
       return
     end
@@ -231,6 +250,7 @@ local function tick(entity)
       d.low_streak = 0
       entity.power_switch_state = false
       set_status(entity, true)
+      set_alert(entity, true)
       set_phase(entity, d, "eject")
     end
   else
@@ -254,8 +274,15 @@ script.on_init(function()
   storage.vixis_breakers = {}
 end)
 
+-- Drop saved renders so tick() redraws them with current graphics/layers.
+script.on_configuration_changed(function()
+  for _, d in pairs(storage.vixis_breakers or {}) do
+    kill_render(d)
+  end
+end)
+
 script.on_event({ defines.events.on_built_entity, defines.events.on_robot_built_entity }, function(e)
-  on_placed(e.created_entity)
+  on_placed(e.entity)
 end)
 
 script.on_event(defines.events.on_entity_cloned, function(e)

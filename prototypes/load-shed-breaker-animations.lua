@@ -2,6 +2,8 @@ local prefix = "__vixis-mod__/graphics/entity/load-shed-breaker/"
 local frame_w = 400
 local frame_h = 705
 local scale = 0.5
+-- Small shift again
+local shift = { 0, -2.01 }
 
 local function anim(name, filename, frame_count, line_length)
   return {
@@ -13,6 +15,7 @@ local function anim(name, filename, frame_count, line_length)
     frame_count = frame_count,
     line_length = line_length or frame_count,
     scale = scale,
+    shift = shift,
   }
 end
 

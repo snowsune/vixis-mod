@@ -14,13 +14,15 @@ data:extend({
     tile_height = 2,
     collision_box = { { -1.4, -0.9 }, { 1.4, 0.9 } },
     selection_box = { { -1.5, -1.0 }, { 1.5, 1.0 } },
-    -- Invisible base; scripted rendering draws the Blender animation.
+    -- Empty fuse holder as the base
     power_on_animation = {
-      filename = "__vixis-mod__/graphics/entity/load-shed-breaker/transparent.png",
-      width = 1,
-      height = 1,
+      filename = "__vixis-mod__/graphics/entity/load-shed-breaker/tripped.png",
+      width = 400,
+      height = 705,
       frame_count = 1,
       line_length = 1,
+      scale = 0.5,
+      shift = { 0, -2 },
     },
     overlay_start_delay = 0,
     open_sound = { filename = "__base__/sound/machine-open.ogg", volume = 0.5 },
@@ -49,18 +51,19 @@ data:extend({
     },
     left_wire_connection_point = {
       shadow = {
-        copper = { -1.25, 0.25 },
+        copper = { -0.75, 0.4 },
       },
+      -- Centre of the left wire ball in the render.
       wire = {
-        copper = { -2.25, 0.0 },
+        copper = { -1.9, -0.75 },
       },
     },
     right_wire_connection_point = {
       shadow = {
-        copper = { 1.25, 0.25 },
+        copper = { 3.05, 0.4 },
       },
       wire = {
-        copper = { 2.25, 0.0 },
+        copper = { 1.9, -0.75 },
       },
     },
     wire_max_distance = 10,
